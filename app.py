@@ -4,6 +4,9 @@ os.environ["GRADIO_SSR_MODE"] = "False"
 
 import gradio as gr
 import agent
+@spaces.GPU(duration=30)
+def run_agent_space(user_message):
+    yield from agent.run_agent(user_message)
 
 # Ekrandan taşmaları önlemek ve kaydırma çubuğu eklemek için
 css_ayari = """
@@ -53,7 +56,11 @@ with gr.Blocks(
             
     # Butona tıklandığında agent.py içindeki run_agent fonksiyonu çalışır
     # log_alani ve cevap_alani eşzamanlı olarak güncellenir
-    gonder.click(fn=agent.run_agent, inputs=mesaj, outputs=[log_alani, cevap_alani])
+    gonder.click(
+    fn=run_agent_space,
+    inputs=mesaj,
+    outputs=[log_alani, cevap_alani]
+)
 
 if __name__ == "__main__":
     demo.launch()
