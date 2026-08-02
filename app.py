@@ -1,3 +1,4 @@
+import spaces
 import os
 os.environ["GRADIO_SSR_MODE"] = "False"
 
