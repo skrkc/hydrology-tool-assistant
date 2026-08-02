@@ -33,7 +33,7 @@ with gr.Blocks(
     css=css_ayari,
     theme=gr.themes.Soft()
 ) as demo:
-    gr.Markdown("# 🌊 Akarsu Gözlem ve Debi Uyarı Asistanı (Tool-Calling)")
+    gr.Markdown("# 🌀 Akarsu Gözlem ve Debi Uyarı Asistanı (Tool-Calling)")
     gr.Markdown("Bu asistan, Kocaeli havzasındaki istasyonların hidrolojik verilerini SQLite veritabanı üzerinden okuyup, debi eşik değeri uyarıları oluşturabilir. Sistem, modelin aracı ne zaman ve nasıl çağırdığını şeffaf bir şekilde günlüğe kaydeder.")
     
     with gr.Row():
