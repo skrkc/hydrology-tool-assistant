@@ -1,15 +1,3 @@
----
-title: Hydrology Tool Assistant
-emoji: 🌀
-colorFrom: gray
-colorTo: blue
-sdk: gradio
-sdk_version: 5.49.1
-python_version: '3.12.12'
-app_file: app.py
-pinned: false
----
-
 # 🌀 Akarsu Gözlem ve Debi Uyarı Asistanı
 
 Bu proje, iki ödevi tek bir repo altında sunmaktadır:
