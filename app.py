@@ -1,4 +1,3 @@
-import spaces
 import os
 os.environ["GRADIO_SSR_MODE"] = "False"
 
@@ -26,7 +25,10 @@ css_ayari = """
 }
 """
 
-with gr.Blocks() as demo:
+with gr.Blocks(
+    css=css_ayari,
+    theme=gr.themes.Soft()
+) as demo:
     gr.Markdown("# 🌊 Akarsu Gözlem ve Debi Uyarı Asistanı (Tool-Calling)")
     gr.Markdown("Bu asistan, Kocaeli havzasındaki istasyonların hidrolojik verilerini SQLite veritabanı üzerinden okuyup, debi eşik değeri uyarıları oluşturabilir. Sistem, modelin aracı ne zaman ve nasıl çağırdığını şeffaf bir şekilde günlüğe kaydeder.")
     
@@ -53,7 +55,4 @@ with gr.Blocks() as demo:
     gonder.click(fn=agent.run_agent, inputs=mesaj, outputs=[log_alani, cevap_alani])
 
 if __name__ == "__main__":
-    demo.launch(
-        css=css_ayari,
-        theme=gr.themes.Soft()
-    )
+    demo.launch()
