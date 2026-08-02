@@ -383,6 +383,7 @@ Test edilen temel paket sürümleri:
 gradio==5.49.1
 huggingface_hub==1.23.0
 transformers==5.14.1
+spaces==0.51.1
 ```
 
 Gerekli paketler `requirements.txt` dosyasında bulunmaktadır.
@@ -495,7 +496,15 @@ create_flow_alert
 SQLite alerts tablosuna kayıt
 ```
 
-Tool-call terminal veya arayüz ekran görüntüsü teslim için depo içerisine ayrıca eklenecektir.
+### Çok Adımlı Tool-Call
+
+![Çok adımlı tool call - Adım 1](screenshots/multi_step_tool_call_1.png)
+
+![Çok adımlı tool call - Adım 2](screenshots/multi_step_tool_call_2.png)
+
+### Ölçüm Okuma Örneği
+
+![Ölçüm okuma tool call](screenshots/measurement_read.png)
 
 ---
 
