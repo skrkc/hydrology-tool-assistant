@@ -1,0 +1,3 @@
+gradio==6.22.0
+huggingface_hub==1.23.0
+transformers==5.14.1
