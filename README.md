@@ -12,7 +12,7 @@ pinned: false
 
 # 🌀 Akarsu Gözlem ve Debi Uyarı Asistanı
 
-Bu proje, yapay zekâ dersi kapsamında hazırlanan iki ödevi tek bir depo altında sunmaktadır:
+Bu proje, iki ödevi tek bir repo altında sunmaktadır:
 
 1. **Custom Chat Template (Jinja2)**
 2. **Tool-Calling Assistant**
