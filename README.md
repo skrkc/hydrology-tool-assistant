@@ -11,28 +11,30 @@ Projenin senaryosu, Kocaeli bölgesindeki sentetik akarsu gözlem istasyonları 
 
 ## 1. Custom Chat Template (Jinja2)
 
-`chat_template.jinja` dosyasında özel bir sohbet şablonu oluşturulmuştur.
+Bu bölümde Hafta 1'de geliştirdiğim kendi ByteLevel BPE tokenizer'ım kullanılmıştır:
 
-Şablon aşağıdaki mesaj türlerini desteklemektedir:
+```text
+srhskrkc/odysseia-bpe-tokenizer
+```
 
-- `system`
-- `user`
-- `assistant`
-- `tool`
+Tokenizer reposu:
 
-Ayrıca:
+```text
+https://huggingface.co/srhskrkc/odysseia-bpe-tokenizer
+```
 
-- Tool tanımları
-- Tool call mesajları
-- Tool response mesajları
-- JSON serileştirme
-- `add_generation_prompt`
+Hafta 3.2 kapsamında bu tokenizer sohbet kullanımına uygun şekilde genişletilmiştir. BPE modeli
+yeniden eğitilmemiş; yalnızca aşağıdaki sohbet rol tokenları eklenmiştir:
 
-desteklenmektedir.
+- `<|system|>`
+- `<|user|>`
+- `<|assistant|>`
 
-Chat template, `test_chat_template.py` dosyası ile `Qwen/Qwen2.5-7B-Instruct` tokenizer'ı üzerinde test edilmiştir.
+Mevcut `<|endoftext|>` tokenı BOS/EOS olarak korunmuştur.
 
-> **Not:** Custom Jinja2 şablonu 1. ödev kapsamında bağımsız olarak test edilmektedir. Tool-calling uygulamasında Hugging Face Inference Providers üzerinden kullanılan modelin kendi sunucu tarafı chat template yapısı kullanılmaktadır.
+`chat_template.jinja`, yalnızca metin tabanlı `system`, `user` ve `assistant` mesajlarını işler.
+Şablon özellikle sade tutulmuştur; tool-calling uygulamasının karmaşık tool formatı bu ödevdeki
+tokenizer şablonuna karıştırılmamıştır.
 
 ### Chat Template Testi
 
@@ -40,40 +42,32 @@ Chat template, `test_chat_template.py` dosyası ile `Qwen/Qwen2.5-7B-Instruct` t
 python test_chat_template.py
 ```
 
-Başarılı test sonucunda mesajlar aşağıdaki yapıya benzer şekilde formatlanmaktadır:
+`test_chat_template.py`, başka bir modelin tokenizer'ını kullanmaz. Doğrudan
+`srhskrkc/odysseia-bpe-tokenizer` reposunu yükler ve tokenizer içinde kayıtlı olan
+`chat_template` ile `apply_chat_template()` çalıştırır.
+
+Örnek çıktı yapısı:
 
 ```text
-<|im_start|>system
-...
-<tools>
-...
-</tools>
-<|im_end|>
-
-<|im_start|>user
-...
-<|im_end|>
-
-<|im_start|>assistant
-<tool_call>
-...
-</tool_call>
-<|im_end|>
-
-<|im_start|>tool
-<tool_response>
-...
-</tool_response>
-<|im_end|>
-
-<|im_start|>assistant
+<|endoftext|>
+<|system|>
+Sen yardımcı bir Türkçe asistansın.
+<|endoftext|>
+<|user|>
+Odysseus kimdir?
+<|endoftext|>
+<|assistant|>
 ```
+
+> Tool-Calling Assistant ayrı bir ödev bölümüdür. Uygulamada kullanılan
+> `openai/gpt-oss-20b` modeli, Hugging Face Inference Providers tarafındaki kendi chat/tool
+> formatını kullanır. Odysseia tokenizer'ındaki bu Jinja şablonu Ödev 1'i göstermek içindir.
 
 ---
 
 ## 2. Tool-Calling Assistant
 
-Tool-Calling Assistant, doğal dilde verilen kullanıcı isteklerini analiz ederek gerekli araçları çağırır ve SQLite veritabanı üzerinde gerçek okuma/yazma işlemleri gerçekleştirir.
+Tool-Calling Assistant, doğal dilde ilerleyen **çok turlu bir hidroloji senaryosunu** yürütür. Konuşma geçmişini korur, gerekli araçları LLM seçer ve SQLite veritabanı üzerinde gerçek okuma/yazma işlemleri gerçekleştirir.
 
 ### Kullanılan Model
 
@@ -98,9 +92,9 @@ kullanılmaktadır.
 Genel işlem akışı:
 
 ```text
-Kullanıcı
+Kullanıcı Mesajı + Konuşma Geçmişi
    ↓
-Gradio Arayüzü
+Gradio Arayüzü + gr.State
    ↓
 LLM Agent
    ↓
@@ -114,7 +108,7 @@ Tool Response
    ↓
 LLM
    ↓
-Nihai Yanıt
+Nihai Yanıt + Güncellenmiş Konuşma Geçmişi
 ```
 
 Ana bileşenler:
@@ -148,7 +142,7 @@ data/hydrology.db
 
 ## 🎛️ Araçlar
 
-Projede üç temel tool bulunmaktadır.
+Projede dört küçük ve birbirini tamamlayan tool bulunmaktadır.
 
 ### `list_stations`
 
@@ -197,6 +191,22 @@ Temel parametreler:
 - `station_name`
 - `threshold_m3s`
 - `note`
+
+---
+
+### `list_flow_alerts`
+
+Daha önce oluşturulmuş debi uyarılarını SQLite veritabanından tekrar okur. İstenirse belirli bir istasyona göre filtreler.
+
+**Tür:** Okuma
+
+Örnek istek:
+
+```text
+Kirazdere için oluşturduğum uyarıları göster.
+```
+
+Bu araç sayesinde bir önceki turda veritabanına yazılan uyarının sonraki turda gerçekten okunabildiği gösterilir.
 
 ---
 
@@ -272,45 +282,51 @@ Bu nedenle en güncel debi ve su seviyesi bilgisi verilememektedir.
 
 ---
 
-## 🔁 Çok Adımlı Tool Calling Örneği
+## 🔁 Çok Turlu Senaryo ve Tool Calling Örneği
 
-Örnek kullanıcı isteği:
+Ödevdeki "küçük bir hikâye" yaklaşımı için uygulama tek bir uzun komut yerine birkaç doğal konuşma turuyla kullanılabilir:
 
-```text
-Kirazdere istasyonunun en güncel debisini kontrol et.
-Eğer debi 60 m³/s üzerindeyse 65 m³/s eşik değerli bir uyarı oluştur.
-Uyarı notu: Arayüz testi.
-```
+### Tur 1 — Sistemi keşfetme
 
-Agent'ın gerçekleştirdiği işlem:
+**Kullanıcı:**
 
 ```text
-1. get_latest_measurement("Kirazdere")
-
-2. SQLite sonucu:
-   flow_m3s = 61.2
-
-3. Model:
-   61.2 > 60 koşulunu değerlendirir.
-
-4. Koşul sağlandığı için:
-
-   create_flow_alert(
-       station_name="Kirazdere",
-       threshold_m3s=65,
-       note="Arayüz testi"
-   )
-
-   çağrılır.
-
-5. SQLite alerts tablosuna yeni kayıt eklenir.
-
-6. Tool sonucu modele geri gönderilir.
-
-7. Model nihai kullanıcı yanıtını üretir.
+Kocaeli'deki aktif akarsu gözlem istasyonları hangileri?
 ```
 
-Bu yapı sayesinde agent, bir tool sonucunu kullanarak yeni bir karar verebilmekte ve ikinci bir tool çağrısı gerçekleştirebilmektedir.
+Agent `list_stations` aracını çağırır ve SQLite'taki gerçek istasyon listesini kullanıcıya verir.
+
+### Tur 2 — Bir istasyonu inceleme
+
+**Kullanıcı:**
+
+```text
+Kirazdere'nin son ölçümüne bakalım.
+```
+
+Agent konuşma bağlamını korur ve `get_latest_measurement("Kirazdere")` aracını çağırır. Örnek veritabanında son debi `61.2 m³/s`, su seviyesi `2.25 m` olarak döner.
+
+### Tur 3 — Gerçek yazma işlemi
+
+**Kullanıcı:**
+
+```text
+Onun için 65 m³/s eşikli bir uyarı oluştur. Not: Vardiya kontrolü.
+```
+
+"Onun" ifadesi önceki turdaki Kirazdere bağlamından çözülür. Agent `create_flow_alert` aracını çağırır ve `alerts` tablosuna gerçek kayıt eklenir.
+
+### Tur 4 — Yazılan veriyi tekrar okuma
+
+**Kullanıcı:**
+
+```text
+Kirazdere için oluşturduğum uyarıları göster.
+```
+
+Agent `list_flow_alerts` aracını çağırır. Böylece önceki turda oluşturulan uyarının veritabanında gerçekten bulunduğu ve durumunun `ACTIVE` olduğu tekrar okunur.
+
+Bu senaryoda kullanıcı → LLM → tool → SQLite → tool response → LLM döngüsü birden fazla konuşma turu boyunca devam eder. Uygulamadaki `gr.State`, konuşma geçmişini sonraki kullanıcı mesajına taşır.
 
 ---
 
@@ -386,70 +402,43 @@ Gerekli paketler `requirements.txt` dosyasında bulunmaktadır.
 python test_chat_template.py
 ```
 
-Bu test ile özel Jinja2 şablonunun tokenizer tarafından doğru şekilde işlendiği kontrol edilmektedir.
+> Bu test doğrudan `srhskrkc/odysseia-bpe-tokenizer` reposundaki kayıtlı Chat Template'i kullanır.
 
 ### Test 2 — Veritabanından Ölçüm Okuma
 
-Kullanıcı:
+```text
+Kirazdere'nin son ölçümüne bakalım.
+```
+
+Beklenen tool: `get_latest_measurement`
+
+### Test 3 — Çok Turlu Bağlam
+
+İlk turda Kirazdere konuşulduktan sonra:
 
 ```text
-Kirazdere istasyonunun en güncel debi ve su seviyesi nedir?
+Onun için 65 m³/s eşikli bir uyarı oluştur.
 ```
 
-Agent:
+ifadesindeki "onun" önceki konuşma bağlamından Kirazdere olarak yorumlanabilmelidir.
+
+### Test 4 — Gerçek Yazma ve Sonraki Turda Okuma
+
+Önce `create_flow_alert` ile uyarı oluşturulur. Sonraki kullanıcı mesajında:
 
 ```text
-get_latest_measurement
+Kirazdere için oluşturduğum uyarıları göster.
 ```
 
-tool'unu çağırır.
+`list_flow_alerts` çağrılır ve aynı kayıt SQLite'tan geri okunur.
 
-SQLite sonucu:
-
-```json
-{
-  "found": true,
-  "station": "Kirazdere",
-  "flow_m3s": 61.2,
-  "water_level_m": 2.25,
-  "measured_at": "2026-08-01 02:00"
-}
-```
-
-### Test 3 — Çok Adımlı Okuma ve Yazma
-
-Kullanıcı:
-
-```text
-Kirazdere istasyonunun en güncel debisini kontrol et.
-Eğer debi 60 m³/s üzerindeyse 65 m³/s eşik değerli bir uyarı oluştur.
-```
-
-Agent sırasıyla:
-
-```text
-get_latest_measurement
-```
-
-ve:
-
-```text
-create_flow_alert
-```
-
-araçlarını çağırır.
-
-Yeni uyarı SQLite veritabanına gerçek kayıt olarak eklenir.
-
-### Test 4 — Hallüsinasyon Kontrolü
-
-Kullanıcı:
+### Test 5 — Hallüsinasyon Kontrolü
 
 ```text
 Atlantis istasyonunun en güncel debi ve su seviyesi nedir?
 ```
 
-Veritabanında böyle bir istasyon bulunmadığından agent herhangi bir hidrolojik değer üretmez.
+Veritabanında böyle bir istasyon bulunmadığından agent herhangi bir hidrolojik değer üretmemelidir.
 
 ---
 
@@ -523,13 +512,15 @@ hydrology-tool-assistant/
 
 Bu projede:
 
-- Özel bir Jinja2 Chat Template oluşturulmuştur.
-- `system`, `user`, `assistant` ve `tool` rolleri desteklenmektedir.
-- Tool tanımları ve tool-call yapıları Chat Template içerisinde işlenmektedir.
+- Hafta 1'de geliştirilen Odysseia BPE tokenizer'a özel bir Jinja2 Chat Template eklenmiştir.
+- Chat Template `system`, `user` ve `assistant` rollerini sade bir metin formatında işler.
+- Chat Template testi başka bir tokenizer yerine doğrudan kendi Odysseia tokenizer reposuyla yapılır.
 - Gerçek structured tool calling kullanılmaktadır.
 - SQLite üzerinden veri okunmaktadır.
 - SQLite'a veri yazılmaktadır.
 - Birden fazla tool ardışık olarak çağrılabilmektedir.
+- Konuşma geçmişi turlar arasında korunmaktadır.
+- SQLite'a yazılan uyarı sonraki turda tekrar okunabilmektedir.
 - Tool sonuçları tekrar LLM'e gönderilmektedir.
 - Veritabanında bulunmayan hidrolojik bilgilerin uydurulması engellenmektedir.
 - Gradio tabanlı kullanıcı arayüzü bulunmaktadır.

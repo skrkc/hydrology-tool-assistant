@@ -40,19 +40,12 @@ def list_stations(province=None):
         results = cursor.fetchall()
 
     if not results:
-        return {
-            "found": False,
-            "message": "Aktif istasyon bulunamadı.",
-        }
+        return {"found": False, "message": "Aktif istasyon bulunamadı."}
 
     return {
         "found": True,
         "stations": [
-            {
-                "name": row[0],
-                "river": row[1],
-                "province": row[2],
-            }
+            {"name": row[0], "river": row[1], "province": row[2]}
             for row in results
         ],
     }
@@ -62,17 +55,11 @@ def get_latest_measurement(station_name):
     """Seçilen aktif istasyonun en güncel ölçümünü getirir."""
     with get_connection() as conn:
         cursor = conn.cursor()
-
         cursor.execute(
             """
-            SELECT
-                s.name,
-                m.flow_m3s,
-                m.water_level_m,
-                m.measured_at
+            SELECT s.name, m.flow_m3s, m.water_level_m, m.measured_at
             FROM stations AS s
-            JOIN measurements AS m
-                ON s.id = m.station_id
+            JOIN measurements AS m ON s.id = m.station_id
             WHERE s.name = ? COLLATE NOCASE
               AND s.active = 1
             ORDER BY m.measured_at DESC
@@ -80,16 +67,12 @@ def get_latest_measurement(station_name):
             """,
             (station_name.strip(),),
         )
-
         result = cursor.fetchone()
 
     if not result:
         return {
             "found": False,
-            "message": (
-                f"'{station_name}' adlı aktif istasyon için "
-                "ölçüm kaydı bulunamadı."
-            ),
+            "message": f"'{station_name}' adlı aktif istasyon için ölçüm kaydı bulunamadı.",
         }
 
     return {
@@ -103,26 +86,16 @@ def get_latest_measurement(station_name):
 
 def create_flow_alert(station_name, threshold_m3s, note=""):
     """Aktif bir istasyon için debi eşik uyarısı oluşturur."""
-
     try:
         threshold_m3s = float(threshold_m3s)
     except (TypeError, ValueError):
-        return {
-            "success": False,
-            "message": "Debi eşik değeri sayısal olmalıdır.",
-        }
+        return {"success": False, "message": "Debi eşik değeri sayısal olmalıdır."}
 
     if threshold_m3s <= 0:
-        return {
-            "success": False,
-            "message": "Debi eşik değeri sıfırdan büyük olmalıdır.",
-        }
+        return {"success": False, "message": "Debi eşik değeri sıfırdan büyük olmalıdır."}
 
     with get_connection() as conn:
         cursor = conn.cursor()
-
-        # Halüsinasyon / geçersiz veri koruması:
-        # Modelin verdiği istasyon gerçekten veritabanında var mı?
         cursor.execute(
             """
             SELECT id, name
@@ -132,36 +105,22 @@ def create_flow_alert(station_name, threshold_m3s, note=""):
             """,
             (station_name.strip(),),
         )
-
         station = cursor.fetchone()
 
         if not station:
             return {
                 "success": False,
-                "message": (
-                    f"'{station_name}' adında aktif bir istasyon "
-                    "veritabanında mevcut değil."
-                ),
+                "message": f"'{station_name}' adında aktif bir istasyon veritabanında mevcut değil.",
             }
 
         station_id, canonical_name = station
-
         cursor.execute(
             """
-            INSERT INTO alerts (
-                station_id,
-                threshold_m3s,
-                note
-            )
+            INSERT INTO alerts (station_id, threshold_m3s, note)
             VALUES (?, ?, ?)
             """,
-            (
-                station_id,
-                threshold_m3s,
-                note.strip() if note else "",
-            ),
+            (station_id, threshold_m3s, note.strip() if note else ""),
         )
-
         alert_id = cursor.lastrowid
 
     return {
@@ -170,8 +129,55 @@ def create_flow_alert(station_name, threshold_m3s, note=""):
         "station": canonical_name,
         "threshold_m3s": threshold_m3s,
         "message": (
-            f"{canonical_name} istasyonu için "
-            f"{threshold_m3s:g} m³/s eşik değerli uyarı "
-            "başarıyla oluşturuldu."
+            f"{canonical_name} istasyonu için {threshold_m3s:g} m³/s eşik değerli "
+            "uyarı başarıyla oluşturuldu."
         ),
+    }
+
+
+def list_flow_alerts(station_name=None):
+    """Oluşturulmuş debi uyarılarını, istenirse istasyona göre filtreleyerek listeler."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        sql = """
+            SELECT
+                a.id,
+                s.name,
+                a.threshold_m3s,
+                COALESCE(a.note, ''),
+                a.status,
+                a.created_at
+            FROM alerts AS a
+            JOIN stations AS s ON s.id = a.station_id
+        """
+        params = []
+
+        if station_name:
+            sql += " WHERE s.name = ? COLLATE NOCASE"
+            params.append(station_name.strip())
+
+        sql += " ORDER BY a.id DESC LIMIT 10"
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+
+    if not rows:
+        message = "Kayıtlı debi uyarısı bulunamadı."
+        if station_name:
+            message = f"'{station_name}' istasyonu için kayıtlı debi uyarısı bulunamadı."
+        return {"found": False, "message": message}
+
+    return {
+        "found": True,
+        "alerts": [
+            {
+                "alert_id": row[0],
+                "station": row[1],
+                "threshold_m3s": row[2],
+                "note": row[3],
+                "status": row[4],
+                "created_at": row[5],
+            }
+            for row in rows
+        ],
     }

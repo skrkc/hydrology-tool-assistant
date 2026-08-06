@@ -1,18 +1,23 @@
 import database
 
+
 def execute_tool(func_name, kwargs):
-    """
-    Yapay zekadan (LLM) gelen JSON araç çağrısını (Tool Call) alır, 
-    ilgili veritabanı fonksiyonuna yönlendirir ve sonucu döndürür.
-    """
-    if func_name == "list_stations":
-        return database.list_stations(**kwargs)
-        
-    elif func_name == "get_latest_measurement":
-        return database.get_latest_measurement(**kwargs)
-        
-    elif func_name == "create_flow_alert":
-        return database.create_flow_alert(**kwargs)
-        
-    else:
+    """LLM'in JSON tool çağrısını izin verilen Python fonksiyonuna yönlendirir."""
+    allowed_tools = {
+        "list_stations": database.list_stations,
+        "get_latest_measurement": database.get_latest_measurement,
+        "create_flow_alert": database.create_flow_alert,
+        "list_flow_alerts": database.list_flow_alerts,
+    }
+
+    function = allowed_tools.get(func_name)
+    if function is None:
         return {"success": False, "message": f"Bilinmeyen araç çağrısı: {func_name}"}
+
+    try:
+        return function(**kwargs)
+    except TypeError as exc:
+        return {
+            "success": False,
+            "message": f"Araç parametreleri geçersiz: {exc}",
+        }

@@ -1,61 +1,77 @@
-# LLM'in hangi araçlara sahip olduğunu anlatan JSON şemaları
+# LLM'in kullanabileceği araçları tanımlayan JSON şemaları.
 TOOLS = [
     {
         "type": "function",
         "function": {
             "name": "list_stations",
-            "description": "Kocaeli ilindeki veya havzadaki akarsu gözlem istasyonlarını listeler. (Okuma Aracı)",
+            "description": "Aktif akarsu gözlem istasyonlarını listeler. İstenirse il adına göre filtreler.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "province": {
                         "type": "string",
-                        "description": "Filtrelemek istenen il adı (örn: Kocaeli). Boş bırakılabilir."
+                        "description": "Filtrelemek istenen il adı (örn: Kocaeli). Boş bırakılabilir.",
                     }
-                }
-            }
-        }
+                },
+            },
+        },
     },
     {
         "type": "function",
         "function": {
             "name": "get_latest_measurement",
-            "description": "Seçilen bir istasyonun en son debi (m3/s) ve su seviyesi (m) ölçümlerini getirir. (Okuma Aracı)",
+            "description": "Seçilen istasyonun en güncel debi, su seviyesi ve ölçüm zamanını getirir.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "station_name": {
                         "type": "string",
-                        "description": "Ölçümü getirilecek istasyonun tam adı (örn: Kirazdere)."
+                        "description": "Ölçümü getirilecek istasyonun tam adı (örn: Kirazdere).",
                     }
                 },
-                "required": ["station_name"]
-            }
-        }
+                "required": ["station_name"],
+            },
+        },
     },
     {
         "type": "function",
         "function": {
             "name": "create_flow_alert",
-            "description": "Belirli bir istasyon için debi eşik değeri uyarısı (alarm) oluşturur. (Yazma Aracı)",
+            "description": "Belirli bir istasyon için debi eşik uyarısı oluşturur ve SQLite veritabanına yazar.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "station_name": {
                         "type": "string",
-                        "description": "Uyarının oluşturulacağı istasyonun adı."
+                        "description": "Uyarının oluşturulacağı istasyonun adı.",
                     },
                     "threshold_m3s": {
                         "type": "number",
-                        "description": "Uyarı tetiklenecek debi eşik değeri (m3/s)."
+                        "description": "Uyarı tetiklenecek debi eşik değeri (m3/s).",
                     },
                     "note": {
                         "type": "string",
-                        "description": "Uyarı için eklenecek not veya açıklama."
+                        "description": "Uyarı için eklenecek kısa not. Kullanıcı not vermediyse boş string kullanılabilir.",
+                    },
+                },
+                "required": ["station_name", "threshold_m3s"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_flow_alerts",
+            "description": "Daha önce oluşturulmuş debi uyarılarını listeler; istenirse bir istasyona göre filtreler.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "station_name": {
+                        "type": "string",
+                        "description": "Uyarıları filtrelemek için istasyon adı. Boş bırakılabilir.",
                     }
                 },
-                "required": ["station_name", "threshold_m3s", "note"]
-            }
-        }
-    }
+            },
+        },
+    },
 ]
