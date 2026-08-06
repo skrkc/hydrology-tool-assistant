@@ -1,3 +1,15 @@
+---
+title: Hydrology Tool Assistant
+emoji: 🌀
+colorFrom: gray
+colorTo: blue
+sdk: gradio
+sdk_version: 5.49.1
+python_version: '3.12.12'
+app_file: app.py
+pinned: false
+---
+
 # 🌀 Akarsu Gözlem ve Debi Uyarı Asistanı
 
 Bu proje, iki ödevi tek bir repo altında sunmaktadır:
@@ -23,8 +35,11 @@ Tokenizer reposu:
 https://huggingface.co/srhskrkc/odysseia-bpe-tokenizer
 ```
 
-Hafta 3.2 kapsamında bu tokenizer sohbet kullanımına uygun şekilde genişletilmiştir. BPE modeli
-yeniden eğitilmemiş; yalnızca aşağıdaki sohbet rol tokenları eklenmiştir:
+Hafta 3.2 kapsamında Hafta 1'de hazırladığım tokenizer'a özel sohbet rol tokenları ve Jinja tabanlı bir Chat Template eklenmiştir. BPE modeli yeniden eğitilmemiş, mevcut tokenizer yapısı korunmuştur.
+
+Chat Template'in güncel ve asıl sürümü yukarıda bağlantısı verilen kendi tokenizer reposunda bulunmaktadır.
+
+Eklenen sohbet rol tokenları:
 
 - `<|system|>`
 - `<|user|>`
@@ -32,11 +47,13 @@ yeniden eğitilmemiş; yalnızca aşağıdaki sohbet rol tokenları eklenmiştir
 
 Mevcut `<|endoftext|>` tokenı BOS/EOS olarak korunmuştur.
 
-`chat_template.jinja`, yalnızca metin tabanlı `system`, `user` ve `assistant` mesajlarını işler.
-Şablon özellikle sade tutulmuştur; tool-calling uygulamasının karmaşık tool formatı bu ödevdeki
-tokenizer şablonuna karıştırılmamıştır.
+Chat Template yalnızca metin tabanlı `system`, `user` ve `assistant` mesajlarını işler.
+
+Tool-Calling Assistant ise ayrı bir çalışma olarak kendi model ve tool-calling yapısını kullanır. Bu nedenle Chat Template ile Tool Calling yapıları birbirine karıştırılmamıştır.
 
 ### Chat Template Testi
+
+Chat Template'in çalıştığını kontrol etmek için proje içerisinde basit bir test dosyası da bulunmaktadır:
 
 ```bash
 python test_chat_template.py
@@ -49,13 +66,10 @@ python test_chat_template.py
 Örnek çıktı yapısı:
 
 ```text
-<|endoftext|>
-<|system|>
-Sen yardımcı bir Türkçe asistansın.
-<|endoftext|>
+<|endoftext|><|system|>
+Sen yardımcı bir Türkçe asistansın.<|endoftext|>
 <|user|>
-Odysseus kimdir?
-<|endoftext|>
+Odysseus kimdir?<|endoftext|>
 <|assistant|>
 ```
 
@@ -135,7 +149,7 @@ data/hydrology.db
 - `tools.py`: Modelden gelen tool çağrılarını ilgili Python fonksiyonlarına yönlendirir.
 - `database.py`: SQLite okuma ve yazma işlemlerini gerçekleştirir.
 - `init_database.py`: Veritabanı tablolarını ve örnek başlangıç verilerini oluşturur.
-- `chat_template.jinja`: Custom Chat Template ödevini içerir.
+- `chat_template.jinja`: Custom Chat Template'in yerel çalışma örneğini içerir; güncel sürüm tokenizer reposunda kayıtlıdır.
 - `test_chat_template.py`: Chat Template'i tokenizer üzerinde test eder.
 
 ---
@@ -311,7 +325,7 @@ Agent konuşma bağlamını korur ve `get_latest_measurement("Kirazdere")` arac�
 **Kullanıcı:**
 
 ```text
-Onun için 65 m³/s eşikli bir uyarı oluştur. Not: Vardiya kontrolü.
+Onun için 65 m³/s eşikli bir uyarı oluştur.
 ```
 
 "Onun" ifadesi önceki turdaki Kirazdere bağlamından çözülür. Agent `create_flow_alert` aracını çağırır ve `alerts` tablosuna gerçek kayıt eklenir.
@@ -457,31 +471,39 @@ https://huggingface.co/spaces/srhskrkc/hydrology-tool-assistant
 
 Gradio arayüzünde tool çağrıları ve tool sonuçları JSON formatında görüntülenmektedir.
 
-Örnek çok adımlı akış:
+Örnek konuşma akışı:
 
 ```text
-Adım 1
 get_latest_measurement
         ↓
-SQLite
+SQLite'tan ölçüm okuma
         ↓
-61.2 m³/s
-
-Adım 2
 create_flow_alert
         ↓
-SQLite alerts tablosuna kayıt
+SQLite'a uyarı yazma
+        ↓
+list_flow_alerts
+        ↓
+Yazılan uyarıyı SQLite'tan tekrar okuma
 ```
 
-### Çok Adımlı Tool-Call
+### Ölçüm Okuma
 
-![Çok adımlı tool call - Adım 1](screenshots/multi_step_tool_call_1.png)
-
-![Çok adımlı tool call - Adım 2](screenshots/multi_step_tool_call_2.png)
-
-### Ölçüm Okuma Örneği
+Kirazdere istasyonunun son ölçümü `get_latest_measurement` aracı ile SQLite veritabanından okunmaktadır.
 
 ![Ölçüm okuma tool call](screenshots/measurement_read.png)
+
+### Konuşma Bağlamı ile Uyarı Oluşturma
+
+Önceki mesajda konuşulan Kirazdere istasyonu, kullanıcının "Onun için" ifadesinden konuşma geçmişi kullanılarak anlaşılır ve `create_flow_alert` aracı çağrılır.
+
+![Uyarı oluşturma tool call](screenshots/multi_step_tool_call_1.png)
+
+### Oluşturulan Uyarıyı Tekrar Okuma
+
+Bir önceki turda SQLite veritabanına yazılan uyarı, `list_flow_alerts` aracı ile tekrar okunmaktadır.
+
+![Uyarı listeleme tool call](screenshots/multi_step_tool_call_2.png)
 
 ---
 
@@ -512,12 +534,13 @@ hydrology-tool-assistant/
 
 Bu projede:
 
-- Hafta 1'de geliştirilen Odysseia BPE tokenizer'a özel bir Jinja2 Chat Template eklenmiştir.
-- Chat Template `system`, `user` ve `assistant` rollerini sade bir metin formatında işler.
-- Chat Template testi başka bir tokenizer yerine doğrudan kendi Odysseia tokenizer reposuyla yapılır.
+- Hafta 1'de geliştirdiğim Odysseia BPE tokenizer'a Hafta 3.2 kapsamında özel bir Jinja Chat Template eklenmiştir.
+- Chat Template `system`, `user` ve `assistant` rollerini işler; güncel sürümü doğrudan kendi Odysseia tokenizer reposunda bulunmaktadır.
+- Chat Template, Hugging Face üzerinden kendi tokenizer reposu tekrar yüklenerek `apply_chat_template()` ile test edilmiştir.
 - Gerçek structured tool calling kullanılmaktadır.
 - SQLite üzerinden veri okunmaktadır.
 - SQLite'a veri yazılmaktadır.
+- Oluşturulan debi uyarıları `list_flow_alerts` aracı ile veritabanından tekrar sorgulanabilmektedir.
 - Birden fazla tool ardışık olarak çağrılabilmektedir.
 - Konuşma geçmişi turlar arasında korunmaktadır.
 - SQLite'a yazılan uyarı sonraki turda tekrar okunabilmektedir.
