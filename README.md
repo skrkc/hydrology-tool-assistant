@@ -13,6 +13,7 @@ pinned: false
 # 🌀 Akarsu Gözlem ve Debi Uyarı Asistanı
 
 Bu proje, iki ödevi tek bir repo altında sunmaktadır:
+> **Güncelleme Notu:** Proje, ilk teslimden sonra ders gerekliliklerine daha tam uyum sağlayacak şekilde güncellenmiştir. Chat Template kendi Odysseia tokenizer'ıma eklenmiş; Tool-Calling tarafında konuşma geçmişi ve oluşturulan uyarıları tekrar okumak için `list_flow_alerts` desteği eklenmiştir.
 
 1. **Custom Chat Template (Jinja2)**
 2. **Tool-Calling Assistant**
