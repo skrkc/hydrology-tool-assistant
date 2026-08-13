@@ -60,9 +60,8 @@ Chat Template'in çalıştığını kontrol etmek için proje içerisinde basit 
 python test_chat_template.py
 ```
 
-`test_chat_template.py`, başka bir modelin tokenizer'ını kullanmaz. Doğrudan
-`srhskrkc/odysseia-bpe-tokenizer` reposunu yükler ve tokenizer içinde kayıtlı olan
-`chat_template` ile `apply_chat_template()` çalıştırır.
+`test_chat_template.py`, `Qwen/Qwen2.5-7B-Instruct` tokenizer'ını yükler. Projede bulunan yerel `chat_template.jinja` dosyası tokenizer'ın `chat_template` alanına atanır ve `apply_chat_template()` ile system, user, assistant, tool ve
+tool-calling mesaj yapılarının doğru biçimde oluşturulduğu test edilir.
 
 Örnek çıktı yapısı:
 
@@ -150,14 +149,14 @@ data/hydrology.db
 - `tools.py`: Modelden gelen tool çağrılarını ilgili Python fonksiyonlarına yönlendirir.
 - `database.py`: SQLite okuma ve yazma işlemlerini gerçekleştirir.
 - `init_database.py`: Veritabanı tablolarını ve örnek başlangıç verilerini oluşturur.
-- `chat_template.jinja`: Custom Chat Template'in yerel çalışma örneğini içerir; güncel sürüm tokenizer reposunda kayıtlıdır.
+- `chat_template.jinja`: Custom Chat Template ödevinin güncel yerel Jinja2 şablonunu içerir.
 - `test_chat_template.py`: Chat Template'i tokenizer üzerinde test eder.
 
 ---
 
 ## 🎛️ Araçlar
 
-Projede dört küçük ve birbirini tamamlayan tool bulunmaktadır.
+Projede beş küçük ve birbirini tamamlayan tool bulunmaktadır.
 
 ### `list_stations`
 
@@ -208,6 +207,28 @@ Temel parametreler:
 - `note`
 
 ---
+---
+
+### `create_flow_alerts`
+
+Birden fazla istasyon veya tüm aktif istasyonlar için aynı anda debi eşik uyarıları oluşturur.
+
+Veritabanındaki `alerts` tablosuna seçilen her istasyon için ayrı bir kayıt ekler.
+
+**Tür:** Yazma
+
+Temel parametreler:
+
+- `threshold_m3s`
+- `station_names`
+- `all_active`
+- `note`
+
+Örnek istek:
+
+```text
+Tüm aktif istasyonlar için 70 m³/s eşik değerli bir uyarı oluştur.
+```
 
 ### `list_flow_alerts`
 
@@ -265,7 +286,7 @@ Modelden:
 - Veritabanından veya tool sonucundan gelmeyen hidrolojik değerleri uydurmaması
 - Tool başarısız olduğunda bunu kullanıcıya açıkça belirtmesi
 - Veritabanında bulunmayan bir istasyon için ölçüm üretmemesi
-- Bir uyarının başarıyla oluşturulduğunu yalnızca `create_flow_alert` aracı başarı döndürürse söylemesi
+- Bir uyarının başarıyla oluşturulduğunu yalnızca `create_flow_alert` veya `create_flow_alerts` aracı başarı döndürürse söylemesi
 
 istenmektedir.
 
@@ -417,7 +438,7 @@ Gerekli paketler `requirements.txt` dosyasında bulunmaktadır.
 python test_chat_template.py
 ```
 
-> Bu test doğrudan `srhskrkc/odysseia-bpe-tokenizer` reposundaki kayıtlı Chat Template'i kullanır.
+> Bu test `Qwen/Qwen2.5-7B-Instruct` tokenizer'ı üzerinde projedeki yerel `chat_template.jinja` dosyasını kullanır.
 
 ### Test 2 — Veritabanından Ölçüm Okuma
 
