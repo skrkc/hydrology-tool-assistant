@@ -1,4 +1,8 @@
-{%- if messages and messages[0]['role'] == 'system' -%}
+{%- if bos_token is defined and bos_token -%}
+{{ bos_token }}
+{%- endif -%}
+
+{%- if messages and messages[0]['role'] in ['system', 'developer'] -%}
 <|im_start|>system
 {{ messages[0]['content'] | trim }}
 {%- if tools is defined and tools %}
@@ -56,7 +60,15 @@ Kullanılabilir araçlar aşağıda verilmiştir.
 </tool_response>
 <|im_end|>
 
+{%- elif message['role'] in ['system', 'developer'] %}
+<|im_start|>system
+{{ message['content'] | trim }}
+<|im_end|>
+
+{%- else %}
+{{ raise_exception("Desteklenmeyen mesaj rolü: " + message['role']) }}
 {%- endif %}
+
 {%- endfor %}
 
 
