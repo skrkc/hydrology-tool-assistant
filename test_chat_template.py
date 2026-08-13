@@ -5,7 +5,7 @@ from transformers import AutoTokenizer
 from tool_schemas import TOOLS
 
 
-MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
+MODEL_ID = "srhskrkc/odysseia-bpe-tokenizer"
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE_PATH = BASE_DIR / "chat_template.jinja"

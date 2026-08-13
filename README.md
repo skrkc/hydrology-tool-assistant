@@ -60,7 +60,7 @@ Chat Template'in çalıştığını kontrol etmek için proje içerisinde basit 
 python test_chat_template.py
 ```
 
-`test_chat_template.py`, `Qwen/Qwen2.5-7B-Instruct` tokenizer'ını yükler. Projede bulunan yerel `chat_template.jinja` dosyası tokenizer'ın `chat_template` alanına atanır ve `apply_chat_template()` ile system, user, assistant, tool ve
+`test_chat_template.py`, `srhskrkc/odysseia-bpe-tokenizer` tokenizer'ını yükler. Projede bulunan yerel `chat_template.jinja` dosyası tokenizer'ın `chat_template` alanına atanır ve `apply_chat_template()` ile system, user, assistant, tool ve
 tool-calling mesaj yapılarının doğru biçimde oluşturulduğu test edilir.
 
 Örnek çıktı yapısı:
@@ -438,7 +438,7 @@ Gerekli paketler `requirements.txt` dosyasında bulunmaktadır.
 python test_chat_template.py
 ```
 
-> Bu test `Qwen/Qwen2.5-7B-Instruct` tokenizer'ı üzerinde projedeki yerel `chat_template.jinja` dosyasını kullanır.
+> Bu test `srhskrkc/odysseia-bpe-tokenizer` tokenizer'ı üzerinde projedeki yerel `chat_template.jinja` dosyasını kullanır.
 
 ### Test 2 — Veritabanından Ölçüm Okuma
 
