@@ -134,6 +134,114 @@ def create_flow_alert(station_name, threshold_m3s, note=""):
         ),
     }
 
+def create_flow_alerts(threshold_m3s, note="", station_names=None, all_active=False):
+    """Birden fazla veya tüm aktif istasyonlar için debi eşik uyarısı oluşturur."""
+    try:
+        threshold_m3s = float(threshold_m3s)
+    except (TypeError, ValueError):
+        return {
+            "success": False,
+            "message": "Debi eşik değeri sayısal olmalıdır.",
+        }
+
+    if threshold_m3s <= 0:
+        return {
+            "success": False,
+            "message": "Debi eşik değeri sıfırdan büyük olmalıdır.",
+        }
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        if all_active:
+            cursor.execute(
+                """
+                SELECT id, name
+                FROM stations
+                WHERE active = 1
+                ORDER BY name
+                """
+            )
+            stations = cursor.fetchall()
+
+        else:
+            if not station_names:
+                return {
+                    "success": False,
+                    "message": "En az bir istasyon adı verilmelidir.",
+                }
+
+            if isinstance(station_names, str):
+                station_names = [station_names]
+
+            stations = []
+            missing_stations = []
+
+            for station_name in station_names:
+                cursor.execute(
+                    """
+                    SELECT id, name
+                    FROM stations
+                    WHERE name = ? COLLATE NOCASE
+                      AND active = 1
+                    """,
+                    (station_name.strip(),),
+                )
+
+                station = cursor.fetchone()
+
+                if station:
+                    stations.append(station)
+                else:
+                    missing_stations.append(station_name)
+
+            if missing_stations:
+                return {
+                    "success": False,
+                    "message": (
+                        "Şu istasyonlar aktif olarak bulunamadı: "
+                        + ", ".join(missing_stations)
+                    ),
+                }
+
+        if not stations:
+            return {
+                "success": False,
+                "message": "Uyarı oluşturulabilecek aktif istasyon bulunamadı.",
+            }
+
+        created_alerts = []
+
+        for station_id, canonical_name in stations:
+            cursor.execute(
+                """
+                INSERT INTO alerts (station_id, threshold_m3s, note)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    station_id,
+                    threshold_m3s,
+                    note.strip() if note else "",
+                ),
+            )
+
+            created_alerts.append(
+                {
+                    "alert_id": cursor.lastrowid,
+                    "station": canonical_name,
+                    "threshold_m3s": threshold_m3s,
+                }
+            )
+
+    return {
+        "success": True,
+        "created_count": len(created_alerts),
+        "alerts": created_alerts,
+        "message": (
+            f"{len(created_alerts)} aktif istasyon için "
+            f"{threshold_m3s:g} m³/s eşik değerli uyarı oluşturuldu."
+        ),
+    }
 
 def list_flow_alerts(station_name=None):
     """Oluşturulmuş debi uyarılarını, istenirse istasyona göre filtreleyerek listeler."""

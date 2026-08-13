@@ -58,6 +58,53 @@ TOOLS = [
             },
         },
     },
+        {
+        "type": "function",
+        "function": {
+            "name": "create_flow_alerts",
+            "description": (
+                "Birden fazla veya tüm aktif akarsu gözlem istasyonları için "
+                "aynı debi eşik uyarısını toplu olarak oluşturur. "
+                "Kullanıcı 'tümü', 'hepsi', 'her istasyon', 'her yere' veya "
+                "'bütün istasyonlar' diyorsa all_active=true kullan."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "station_names": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": (
+                            "Uyarı oluşturulacak istasyon adları. "
+                            "all_active=true ise boş bırakılabilir."
+                        ),
+                    },
+                    "all_active": {
+                        "type": "boolean",
+                        "description": (
+                            "Tüm aktif istasyonlara uyarı oluşturulacaksa true."
+                        ),
+                    },
+                    "threshold_m3s": {
+                        "type": "number",
+                        "description": (
+                            "Uyarı tetiklenecek debi eşik değeri (m3/s)."
+                        ),
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": (
+                            "Uyarı için kısa not. Kullanıcı not vermediyse "
+                            "boş string kullanılabilir."
+                        ),
+                    },
+                },
+                "required": ["threshold_m3s"],
+            },
+        },
+    },
     {
         "type": "function",
         "function": {

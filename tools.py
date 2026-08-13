@@ -7,6 +7,7 @@ def execute_tool(func_name, kwargs):
         "list_stations": database.list_stations,
         "get_latest_measurement": database.get_latest_measurement,
         "create_flow_alert": database.create_flow_alert,
+        "create_flow_alerts": database.create_flow_alerts,
         "list_flow_alerts": database.list_flow_alerts,
     }
 
